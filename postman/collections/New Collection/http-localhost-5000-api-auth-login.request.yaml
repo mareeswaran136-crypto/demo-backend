@@ -1,0 +1,18 @@
+$kind: http-request
+name: http://localhost:5000/api/auth/login
+description: ""
+url: http://localhost:5000/api/auth/login
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "name": "Capt. Rajesh Varma",
+      "email": "rajesh.varma@savera.aero",
+      "badgeId": "SVR-OCC-001",
+      "shift": "Day Shift (06:00 - 18:00 IST)",
+      "role":"admin"
+    }
+order: 1000
