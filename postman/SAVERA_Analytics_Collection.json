@@ -1,0 +1,93 @@
+{
+  "info": {
+    "name": "SAVÉRA — Operations & Performance Analytics API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for SAVÉRA Operations & Performance Analytics"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Login (Get JWT Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"YOUR_SEED_PASSWORD\"\n}"
+        }
+      }
+    },
+    {
+      "name": "1. Get Analytics Overview (Today)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/analytics/overview?period=today"
+      }
+    },
+    {
+      "name": "2. Get Analytics Overview (Q4 2026)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/analytics/overview?period=q4_2026"
+      }
+    },
+    {
+      "name": "3. Get Hourly OTP (%) Data",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/analytics/hourly-otp?period=this_week"
+      }
+    },
+    {
+      "name": "4. Get Fleet Aircraft Type Productivity",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/analytics/fleet-productivity?period=this_month"
+      }
+    },
+    {
+      "name": "5. Recalculate Analytics Metrics (POST /api/analytics/recalculate)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/analytics/recalculate"
+      }
+    },
+    {
+      "name": "6. Unauthorized Access (No Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/analytics/overview?period=today"
+      }
+    }
+  ]
+}

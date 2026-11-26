@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "SAVÉRA — Live Operations, Radar, Alerts & Delays API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for SAVÉRA Live Operations & Airspace Radar"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "delayedFlightId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Login (Get JWT Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"YOUR_SEED_PASSWORD\"\n}"
+        }
+      }
+    },
+    {
+      "name": "1. Get Live Radar & Tracked Flights (GET /api/live-ops/radar)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/live-ops/radar"
+      }
+    },
+    {
+      "name": "2. Sync ADS-B Radar Telemetry (POST /api/live-ops/radar/sync)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/live-ops/radar/sync"
+      }
+    },
+    {
+      "name": "3. Get Operational Alerts Feed (GET /api/live-ops/alerts)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/live-ops/alerts"
+      }
+    },
+    {
+      "name": "4. Broadcast OCC Advisory (POST /api/live-ops/alerts/broadcast)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/live-ops/alerts/broadcast",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"ATFM Flow Control Active - DEL Sector\",\n  \"message\": \"15-minute departure spacing in effect due to upper-airway congestion.\",\n  \"category\": \"OCC Advisory\",\n  \"severity\": \"warning\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5. Get Delay Monitoring & Mitigations (GET /api/live-ops/delays)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const delays = pm.response.json().delays;",
+              "if (delays && delays.length > 0) pm.collectionVariables.set('delayedFlightId', delays[0]._id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/live-ops/delays"
+      }
+    },
+    {
+      "name": "6. Expedite Ground Priority (PATCH /api/live-ops/delays/:flightId/expedite)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/live-ops/delays/{{delayedFlightId}}/expedite"
+      }
+    },
+    {
+      "name": "7. Unauthorized Access (No Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/live-ops/radar"
+      }
+    }
+  ]
+}

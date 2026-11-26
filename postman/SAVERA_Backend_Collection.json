@@ -1,0 +1,168 @@
+{
+  "info": {
+    "name": "SAVÉRA — Common Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for SAVÉRA Staff Login & CRM Common Backend"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "createdStaffId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Staff Login (Valid)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('JWT token generated', () => pm.expect(json.token).to.be.a('string').and.not.empty);",
+              "pm.collectionVariables.set('token', json.token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"YOUR_SEED_PASSWORD\",\n  \"rememberMe\": true\n}"
+        }
+      }
+    },
+    {
+      "name": "2. Invalid Login (Wrong Passcode)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"wrong-passcode\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3. Get Authenticated User (/api/auth/me)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/auth/me"
+      }
+    },
+    {
+      "name": "4. Get Staff Profile (/api/staff/profile)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/staff/profile"
+      }
+    },
+    {
+      "name": "5. Unauthorized API Access (No Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/staff/profile"
+      }
+    },
+    {
+      "name": "6. Get All Staff (Protected CRM API)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/staff"
+      }
+    },
+    {
+      "name": "7. Create Staff (POST /api/staff)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('createdStaffId', pm.response.json().staff.id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/staff",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"staffId\": \"SVR-OCC-003\",\n  \"fullName\": \"Vikram Singh\",\n  \"officialEmail\": \"vikram.singh@savera.aero\",\n  \"passcode\": \"Savera@2026\",\n  \"department\": \"Ground Handling\",\n  \"badgeId\": \"SVR-OCC-003\",\n  \"designation\": \"Ramp Operations Lead\",\n  \"clearanceLevel\": \"Level 2 - Ramp\",\n  \"operationalShift\": \"Day Shift (06:00 - 18:00 IST)\",\n  \"role\": \"controller\"\n}"
+        }
+      }
+    },
+    {
+      "name": "8. Get Staff By ID (GET /api/staff/:id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/staff/{{createdStaffId}}"
+      }
+    },
+    {
+      "name": "9. Update Staff (PUT /api/staff/:id)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/staff/{{createdStaffId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"operationalShift\": \"Night Shift (18:00 - 06:00 IST)\"\n}"
+        }
+      }
+    },
+    {
+      "name": "10. Delete Staff (DELETE /api/staff/:id)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/staff/{{createdStaffId}}"
+      }
+    },
+    {
+      "name": "11. Logout (POST /api/auth/logout)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/auth/logout"
+      }
+    }
+  ]
+}

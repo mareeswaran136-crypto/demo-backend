@@ -1,0 +1,189 @@
+{
+  "info": {
+    "name": "SAVÉRA — Airline Operations Dashboard API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for SAVÉRA Airline Operations Dashboard, Flights, Routes, Aircraft, and Activity Logs"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "createdFlightId", "value": "" },
+    { "key": "routeId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Login (Get JWT Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"YOUR_SEED_PASSWORD\",\n  \"rememberMe\": true\n}"
+        }
+      }
+    },
+    {
+      "name": "1. Dashboard Overview (GET /api/dashboard/overview)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/dashboard/overview"
+      }
+    },
+    {
+      "name": "2. Dashboard KPIs (GET /api/dashboard/kpis)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/dashboard/kpis"
+      }
+    },
+    {
+      "name": "3. Dashboard Operations (GET /api/dashboard/operations)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/dashboard/operations"
+      }
+    },
+    {
+      "name": "4. List & Search Flights (GET /api/flights)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/flights?search=SVR&status=All"
+      }
+    },
+    {
+      "name": "5. Create Flight (POST /api/flights)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "  pm.collectionVariables.set('createdFlightId', pm.response.json().flight._id);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/flights",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"flightNumber\": \"SVR-999\",\n  \"airline\": \"SAVÉRA\",\n  \"origin\": \"DEL\",\n  \"destination\": \"CDG\",\n  \"scheduledDeparture\": \"2026-11-26T14:00:00.000Z\",\n  \"scheduledArrival\": \"2026-11-26T22:30:00.000Z\",\n  \"flightStatus\": \"Scheduled\",\n  \"gate\": \"T3-G15\",\n  \"operationalStatus\": \"Normal\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Update Flight (PUT /api/flights/:id)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/flights/{{createdFlightId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"gate\": \"T3-G18\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Update Flight Status (PATCH /api/flights/:id/status)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/flights/{{createdFlightId}}/status",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"flightStatus\": \"Delayed\"\n}"
+        }
+      }
+    },
+    {
+      "name": "8. Delete Flight (DELETE /api/flights/:id)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/flights/{{createdFlightId}}"
+      }
+    },
+    {
+      "name": "9. Get Routes (GET /api/routes)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const routes = pm.response.json().routes;",
+              "if (routes && routes.length > 0) pm.collectionVariables.set('routeId', routes[0]._id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/routes"
+      }
+    },
+    {
+      "name": "10. Get Operational Activity (GET /api/operations/activity)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/operations/activity"
+      }
+    },
+    {
+      "name": "11. Get Aircraft (GET /api/aircraft)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/aircraft"
+      }
+    },
+    {
+      "name": "12. Unauthorized Access (No Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/dashboard/kpis"
+      }
+    }
+  ]
+}

@@ -1,0 +1,157 @@
+{
+  "info": {
+    "name": "SAVÉRA — Fleet Management & Aircraft Status API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for SAVÉRA Fleet Management & Aircraft Status"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "fleetId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Login (Get JWT Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"YOUR_SEED_PASSWORD\"\n}"
+        }
+      }
+    },
+    {
+      "name": "1. Get All Fleet Aircraft (with model, status, search)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/fleet?model=All Models&status=All&search="
+      }
+    },
+    {
+      "name": "2. Get Fleet Summary Counts (GET /api/fleet/stats/summary)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/fleet/stats/summary"
+      }
+    },
+    {
+      "name": "3. Create Aircraft Record (POST /api/fleet)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) pm.collectionVariables.set('fleetId', pm.response.json().aircraft._id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/fleet",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"registration\": \"VT-SAV\",\n  \"msn\": \"MSN-6102\",\n  \"deliveryYear\": 2025,\n  \"model\": \"Airbus A350-900\",\n  \"modelCode\": \"A350\",\n  \"engineType\": \"Rolls-Royce Trent XWB\",\n  \"capacity\": 300,\n  \"cabinBreakdown\": { \"first\": 12, \"business\": 42, \"economy\": 246 },\n  \"availabilityStatus\": \"Standby\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4. Get Aircraft By ID (GET /api/fleet/:id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/fleet/{{fleetId}}"
+      }
+    },
+    {
+      "name": "5. Update Aircraft Details (PUT /api/fleet/:id)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/fleet/{{fleetId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assignedRoute\": { \"origin\": \"DEL\", \"destination\": \"BOM\", \"flightNumber\": \"SVR-401\" }\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Update Aircraft Availability (PATCH /api/fleet/:id/availability)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/fleet/{{fleetId}}/availability",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"availabilityStatus\": \"Active\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Update Maintenance Status (PATCH /api/fleet/:id/maintenance)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/fleet/{{fleetId}}/maintenance",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"label\": \"A-Check Cleared\",\n  \"nextCheckSummary\": \"Next check in 500 FH\",\n  \"isCleared\": true\n}"
+        }
+      }
+    },
+    {
+      "name": "8. Deactivate Aircraft (DELETE /api/fleet/:id)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/fleet/{{fleetId}}"
+      }
+    },
+    {
+      "name": "9. Unauthorized Access (No Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/fleet"
+      }
+    }
+  ]
+}

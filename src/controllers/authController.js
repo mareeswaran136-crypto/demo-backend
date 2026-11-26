@@ -1,109 +1,117 @@
-const User = require("../models/user");
+const Staff = require("../models/Staff");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-// REGISTER
-exports.register = async (req, res) => {
+const sanitizeStaff = (staff) => ({
+    id: staff._id,
+    staffId: staff.staffId,
+    fullName: staff.fullName,
+    officialEmail: staff.officialEmail,
+    department: staff.department,
+    badgeId: staff.badgeId,
+    designation: staff.designation,
+    clearanceLevel: staff.clearanceLevel,
+    operationalShift: staff.operationalShift,
+    role: staff.role,
+    isActive: staff.isActive,
+    createdAt: staff.createdAt,
+    updatedAt: staff.updatedAt
+});
+
+// POST /api/auth/login
+exports.login = async (req, res) => {
     try {
-        const { name, email, badgeId, shift, role } = req.body;
+        const department = (req.body.department || "").trim();
+        const identifier = (
+            req.body.identifier ||
+            req.body.email ||
+            req.body.officialEmail ||
+            req.body.staffId ||
+            ""
+        ).trim();
+        const passcode = req.body.passcode || req.body.password || "";
+        const rememberMe = Boolean(req.body.rememberMe);
 
-        if (!name || !email || !badgeId || !shift || !role) {
+        if (!department || !identifier || !passcode) {
             return res.status(400).json({
-                message: "All fields are required"
+                message:
+                    "Operational Department, Staff ID or Airline Email, and Security Passcode are required."
             });
         }
 
+        const staff = await Staff.findOne({
+            $or: [
+                { officialEmail: identifier.toLowerCase() },
+                { staffId: identifier.toUpperCase() },
+                { badgeId: identifier.toUpperCase() }
+            ]
+        }).select("+passwordHash");
 
-        const existingUser = await User.findOne({ email });
-
-        if (existingUser) {
-            return res.status(409).json({
-                message: "Email already registered"
+        if (!staff) {
+            return res.status(401).json({
+                message: "Invalid credentials."
             });
         }
 
+        if (!staff.isActive) {
+            return res.status(403).json({
+                message: "Staff account is inactive. Contact OCC Administrator."
+            });
+        }
 
-        // Save user
-        const user = await User.create({
-            name,
-            email,
-            badgeId,
-            shift,
-            role
+        if (staff.department.toLowerCase() !== department.toLowerCase()) {
+            return res.status(401).json({
+                message: "Selected Operational Department does not match your staff record."
+            });
+        }
+
+        const isMatch = await bcrypt.compare(passcode, staff.passwordHash);
+        if (!isMatch) {
+            return res.status(401).json({
+                message: "Invalid security passcode."
+            });
+        }
+
+        const expiresIn = rememberMe
+            ? process.env.JWT_REMEMBER_EXPIRES_IN || "7d"
+            : process.env.JWT_EXPIRES_IN || "1d";
+
+        const token = jwt.sign(
+            {
+                id: staff._id,
+                staffId: staff.staffId,
+                role: staff.role,
+                department: staff.department
+            },
+            process.env.JWT_SECRET,
+            { expiresIn }
+        );
+
+        return res.status(200).json({
+            message: "OCC authorization successful.",
+            token,
+            expiresIn,
+            rememberMe,
+            staff: sanitizeStaff(staff)
         });
-        
-
-        res.status(201).json({
-            message: "Registration successful",
-            user: {
-                name: user.name,
-                email: user.email,
-                badgrId: user.badgeId,
-                shift: user.shift,
-                role: user.role
-            }
-        });
-
     } catch (error) {
-        res.status(500).json({
-            message: "Registration failed",
+        return res.status(500).json({
+            message: "Authentication failed.",
             error: error.message
         });
     }
 };
 
+// POST /api/auth/logout
+exports.logout = async (req, res) => {
+    return res.status(200).json({
+        message: "Logged out successfully."
+    });
+};
 
-// LOGIN
-exports.login = async (req, res) => {
-    try {
-        const { email, badgeId } = req.body;
-
-        if (!email || !badgeId) {
-            return res.status(400).json({
-                message: "Email and badgeID required"
-            });
-        }
-
-        // Find user
-        const user = await User.findOne({
-            email: email.toLowerCase().trim(),
-            badgeId: badgeId.trim()
-        });
-
-        if (!user) {
-            return res.status(401).json({
-                message: "Invalid email or badgeID"
-            });
-        }
-
-        // Generate JWT
-        const token = jwt.sign(
-            {
-                id: user._id
-            },
-            process.env.JWT_SECRET,
-            {
-                expiresIn: process.env.JWT_EXPIRES_IN || "1d"
-            }
-        );
-
-        res.status(200).json({
-            message: "Login successful",
-            token,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                badgeId: user.badgeId,
-                shift: user.shift,
-                role: user.role
-            }
-        });
-
-    } catch (error) {
-        res.status(500).json({
-            message: "Login failed",
-            error: error.message
-        });
-    }
+// GET /api/auth/me
+exports.getMe = async (req, res) => {
+    return res.status(200).json({
+        staff: sanitizeStaff(req.staff)
+    });
 };

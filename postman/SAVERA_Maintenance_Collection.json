@@ -1,0 +1,143 @@
+{
+  "info": {
+    "name": "SAVÉRA — Aircraft Maintenance & Technical Logs API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection for SAVÉRA Aircraft Maintenance & Technical Logs"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "token", "value": "" },
+    { "key": "aircraftId", "value": "" },
+    { "key": "maintenanceId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "0. Login (Get JWT Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', () => pm.response.to.have.status(200));",
+              "pm.collectionVariables.set('token', pm.response.json().token);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{baseUrl}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"department\": \"OCC\",\n  \"identifier\": \"rajesh.varma@savera.aero\",\n  \"passcode\": \"YOUR_SEED_PASSWORD\"\n}"
+        }
+      }
+    },
+    {
+      "name": "1. Get All Maintenance Logs (with status & search)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/maintenance?status=ALL&search="
+      }
+    },
+    {
+      "name": "2. Get Maintenance KPI Summary Stats",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/maintenance/stats/summary"
+      }
+    },
+    {
+      "name": "3. Create Maintenance Task (POST /api/maintenance)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) pm.collectionVariables.set('maintenanceId', pm.response.json().log._id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/maintenance",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"aircraftId\": \"{{aircraftId}}\",\n  \"taskTitle\": \"Scheduled A-Check & Avionics Calibration\",\n  \"checkCode\": \"A-Check\",\n  \"category\": \"Avionics Calibration\",\n  \"hangarBay\": \"Hangar Bay 2\",\n  \"estimatedReturnToService\": \"2026-11-27T06:00:00.000Z\",\n  \"status\": \"IN PROGRESS\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4. Get Maintenance Log By ID (GET /api/maintenance/:id)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/maintenance/{{maintenanceId}}"
+      }
+    },
+    {
+      "name": "5. Update Maintenance Task (PUT /api/maintenance/:id)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/maintenance/{{maintenanceId}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hangarBay\": \"Hangar Bay 3\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Sign Off Maintenance Task (PATCH /api/maintenance/:id/sign-off)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{baseUrl}}/api/maintenance/{{maintenanceId}}/sign-off",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"remarks\": \"All A-Check & avionics calibration checks passed. Cleared for service.\"\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Delete Maintenance Task (DELETE /api/maintenance/:id)",
+      "request": {
+        "method": "DELETE",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/maintenance/{{maintenanceId}}"
+      }
+    },
+    {
+      "name": "8. Unauthorized Access (No Token)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": ["pm.test('Status is 401', () => pm.response.to.have.status(401));"],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/maintenance"
+      }
+    }
+  ]
+}
